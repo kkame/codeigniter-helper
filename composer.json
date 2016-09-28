@@ -1,0 +1,16 @@
+{
+    "name": "kkame/codeigniter-helper",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Kkmae",
+            "email": "kkamenet@gmail.com"
+        }
+    ],
+    "autoload":{
+        "psr-4":{
+            "Kkame\\Codeigniter\\":"src"
+        }
+    },
+    "require": {}
+}

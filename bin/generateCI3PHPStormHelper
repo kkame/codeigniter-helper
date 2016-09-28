@@ -1,0 +1,175 @@
+#!/usr/bin/env php
+<?php
+
+namespace Kkame\Codeigniter;
+
+class Generator {
+
+    protected $appPath,$modelPath,$libraryPath,$output;
+
+    protected $modelList=[];
+    protected $libraryList=[];
+
+
+    protected function getDefaultTemplate()
+    {
+
+        $this->output=file_get_contents('https://raw.githubusercontent.com/nicolas-goudry/CI-PHPStorm-Code-Completion/master/PHPStorm_CI_CC/PHPStorm_CI_CC.php');
+
+    }
+
+    protected function generateOutput()
+    {
+
+        $libraryComment="\n\t **************** ".$this->libraryPath." ****************\n";
+        print_r($this->libraryList);
+        foreach($this->libraryList as $libraryFile)
+        {
+            $varName=$libraryFile;
+            $className=ucfirst($varName);
+
+            $libraryComment.="\t * @property {$className} \${$varName} \n";
+
+        }
+
+        $modelComment="\n\t **************** ".$this->modelPath." ****************\n";
+        foreach($this->modelList as $modelFile)
+        {
+            $varName=$modelFile;
+            $className=ucfirst($varName);
+
+            $modelComment.="\t * @property {$className} \${$varName} \n";
+
+        }
+
+
+
+        $this->output=preg_replace('/\s*\** YOUR MODELS \**\s*/ui',$modelComment,$this->output);
+        $this->output=preg_replace('/\s*\** YOUR LIBRARIES \**\s*/ui',$libraryComment,$this->output);
+
+        file_put_contents($_SERVER['PWD'].'/PHPStorm_CI_CC.php',$this->output);
+
+    }
+
+
+
+
+
+    public function generate()
+    {
+
+        $this->setAppPath();
+
+        $this->getLibraryList();
+        $this->getModelList();
+
+        $this->getDefaultTemplate();
+        $this->generateOutput();
+    }
+
+    protected function setAppPath()
+    {
+        $count=0;
+        while(true){
+            if($count)
+                echo $this->appPath." is Not CI application Path ..\n";
+
+            echo "Input your Codeigniter application Path";
+
+            $inputPath = trim(readline("input your Codeigniter application path:[default:" . $_SERVER['PWD'] . DIRECTORY_SEPARATOR."application] "));
+
+            if(empty($inputPath))
+                $this->appPath=$_SERVER['PWD'].DIRECTORY_SEPARATOR."application";
+            else
+                $this->appPath=$inputPath;
+
+
+
+            if($this->validateAppPath($this->appPath)) {
+
+                $this->modelPath=$this->appPath.DIRECTORY_SEPARATOR.'models/';
+                $this->libraryPath=$this->appPath.DIRECTORY_SEPARATOR.'libraries/';
+                 break;
+            }
+
+            $count++;
+        }
+
+
+
+    }
+
+    protected function validateAppPath($path)
+    {
+
+        $modelPath=$path.DIRECTORY_SEPARATOR.'models/';
+        $libraryPath=$path.DIRECTORY_SEPARATOR.'libraries/';
+
+
+        if(is_dir($modelPath)&&is_dir($libraryPath))
+            return true;
+        else
+            return false;
+
+    }
+
+
+
+    protected function getModelList()
+    {
+
+        $this->modelList=$this->getPHPFileList($this->modelPath);
+
+
+    }
+
+    protected function getLibraryList()
+    {
+
+        $this->libraryList=$this->getPHPFileList($this->libraryPath);
+    }
+
+
+
+    protected function getPHPFileList($dir) {
+
+        $result = array();
+
+        foreach (scandir($dir) as $item)
+        {
+            if (!in_array($item,array(".","..")))
+            {
+                if (is_dir($dir . DIRECTORY_SEPARATOR . $item))
+                {
+                    $subdir=$this->getPHPFileList($dir . DIRECTORY_SEPARATOR . $item);
+
+                    if(count($subdir))
+                        $result = array_merge($result,$subdir);
+                }
+                else
+                {
+                    if(strtolower(substr($item,-3))=='php')
+                        $result[] = substr($item,0,-4);
+                }
+            }
+        }
+
+        return $result;
+    }
+
+}
+
+
+
+try{
+    $generator = new Finder();
+
+    $generator->generate();
+
+}
+catch (\Exception $e)
+{
+    echo $e->getMessage();
+}
+
+
