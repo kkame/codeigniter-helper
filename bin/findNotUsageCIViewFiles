@@ -1,0 +1,186 @@
+#!/usr/bin/env php
+<?php
+
+namespace Kkame\Codeigniter;
+
+class NotUsageViewFinder {
+
+    protected $appPath,$modelPath,$controllerPath,$output;
+
+    protected $viewPath=[];
+    protected $controllerList=[];
+
+
+    public function generate()
+    {
+
+        $this->setAppPath();
+        $this->checkUsageViewFile();
+
+    }
+
+    protected function setAppPath()
+    {
+        $count=0;
+        while(true){
+            if($count)
+                echo $this->appPath." is Not CI application Path ..\n";
+
+            echo "Input your Codeigniter application Path";
+
+            $inputPath = trim(readline("input your Codeigniter application path:[default:" . $_SERVER['PWD'] . DIRECTORY_SEPARATOR."application] "));
+
+            if(empty($inputPath))
+                //$this->appPath=$_SERVER['PWD'].DIRECTORY_SEPARATOR."application";
+                $this->appPath="/backup/projects/php/edas/htdocs/application";
+            else
+                $this->appPath=$inputPath;
+
+
+
+            if($this->validateAppPath($this->appPath)) {
+
+                $this->viewPath=$this->appPath.DIRECTORY_SEPARATOR.'views/';
+                $this->controllerPath=$this->appPath.DIRECTORY_SEPARATOR.'controllers/';
+                 break;
+            }
+
+            $count++;
+        }
+
+
+
+    }
+
+    protected function validateAppPath($path)
+    {
+
+        $viewPath=$path.DIRECTORY_SEPARATOR.'views/';
+        $controllerPath=$path.DIRECTORY_SEPARATOR.'controllers/';
+
+
+        if(is_dir($viewPath)&&is_dir($controllerPath))
+            return true;
+        else
+            return false;
+
+    }
+
+
+
+    protected function getViewPath()
+    {
+
+        $this->viewPath=$this->getFileList($this->modelPath);
+
+
+    }
+
+    protected function getControllerList()
+    {
+
+        $this->controllerList=$this->getFileList($this->controllerPath);
+    }
+
+
+
+    protected function getFileList($dir) {
+
+        $result = array();
+
+        foreach (scandir($dir) as $item)
+        {
+            if (!in_array($item,array(".","..")))
+            {
+                if (is_dir($dir . DIRECTORY_SEPARATOR . $item))
+                {
+                    $subdir=$this->getFileList($dir . DIRECTORY_SEPARATOR . $item);
+
+                    if(count($subdir))
+                        $result = array_merge($result,$subdir);
+                }
+                else
+                {
+                    if(strtolower(substr($item,-3))=='php')
+                    {
+                        $result[] = $dir.DIRECTORY_SEPARATOR.$item;
+                    }
+                }
+            }
+        }
+
+        return $result;
+    }
+
+
+    protected function checkUsageViewFile()
+    {
+
+
+        $viewFileList=$this->getFileList($this->viewPath);
+        $controllerFileList=$this->getFileList($this->controllerPath);
+
+        $viewPathLength=strlen($this->viewPath)+1;
+
+
+
+        $notUsedViewList=$viewFileList;
+        $notFoundViewList=[];
+
+
+        foreach($controllerFileList as $controllerFile)
+        {
+
+            $controllerText=file_get_contents($controllerFile);
+
+
+            $matches=$this->findViewPathString($controllerText);
+
+            foreach($matches as $viewPath) {
+                $viewKey = array_search($this->viewPath . DIRECTORY_SEPARATOR . $viewPath.'.php', $viewFileList);
+
+                if($viewKey!==FALSE)
+                    unset($notUsedViewList[$viewKey]);
+                else
+                    $notFoundViewList[]=$viewPath;
+
+
+
+            }
+
+        }
+
+
+        echo "못찾은 뷰파일 리스트\n";
+        print_r($notFoundViewList);
+
+        echo "미사용 뷰파일 리스트\n";
+        print_r($notUsedViewList);
+
+    }
+
+
+    protected function findViewPathString($contents)
+    {
+
+        preg_match_all('/load\-\>view\([\'\\"]{1}([^\'\\"]+)[\'\\"]{1}/i',$contents,$matches);
+
+        return $matches[1];
+    }
+
+}
+
+
+
+try{
+    $generator = new NotUsageViewFinder();
+
+    $generator->generate();
+
+}
+catch (\Exception $e)
+{
+    echo $e->getMessage();
+}
+
+
