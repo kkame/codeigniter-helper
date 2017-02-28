@@ -162,7 +162,7 @@ class Generator {
 
 
 try{
-    $generator = new NotUsageViewFinder();
+    $generator = new Generator();
 
     $generator->generate();
 

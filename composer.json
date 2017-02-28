@@ -9,8 +9,13 @@
     ],
     "autoload":{
         "psr-4":{
-            "Kkame\\Codeigniter\\":"src"
+            "Kkame\\Cistorm\\":"src"
         }
     },
-    "require": {}
+    "require": {
+        "vladahejda/phpunit-assert-exception": "^1.3"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^6.0"
+    }
 }
